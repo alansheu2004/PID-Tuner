@@ -8,6 +8,8 @@ public class PID {
     private double lastTime;
     private double integral;
 
+    private PIDFrame frame;
+
     public PID() {
         this(0,0,0,0);
     }
@@ -27,18 +29,22 @@ public class PID {
 
     public double update(double actual, double setpoint) {
         double error = setpoint - actual;
-        double time = System.currentTimeMillis()/1000.0;
+        double currentTime = System.currentTimeMillis()/1000.0;
 
         double derivative = 0;
         
-        if (lastTime == 0) {
-            double interval = time - lastTime;
+        if (lastTime != 0) {
+            double interval = currentTime - lastTime;
 		    integral += error * interval;
             derivative = (error - lastError) / interval;
         }
 
+        if (frame != null) {
+            frame.updateData(currentTime, actual, setpoint);
+        }
+
         lastError = error;
-        lastTime = time;
+        lastTime = currentTime;
 
 		return error*kP + integral*kI + derivative*kD + setpoint*kF;
     }
@@ -73,5 +79,9 @@ public class PID {
 
     public void setF(double kF) {
         this.kF = kF;
+    }
+
+    public void setFrame(PIDFrame frame) {
+        this.frame = frame;
     }
 }
