@@ -40,7 +40,7 @@ public class PID {
         }
 
         if (frame != null) {
-            frame.updateData(currentTime, actual, setpoint);
+            frame.updateData(currentTime, actual, setpoint, integral, derivative);
         }
 
         lastError = error;
