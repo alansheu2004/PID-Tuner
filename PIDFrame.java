@@ -12,6 +12,8 @@ public class PIDFrame extends JFrame {
     private PID pid;
 
     private final int padding = 15;
+    private final Color DARK_GREEN = new Color(0f, 0.75f, 0f);
+    private final DecimalFormat df = new DecimalFormat("######0.00");
 
     private JPanel contentPane;
 
@@ -30,7 +32,11 @@ public class PIDFrame extends JFrame {
     private JLabel currentIntegral;
     private JLabel currentDerivative;
 
+    private boolean inSuccessRange;
+    private boolean succeeded;
+    private double currentSuccessTime;
     private JPanel successPanel;
+    private JLabel timeToSuccessLabel;
     private JLabel eSuccessLabel;
     private JSpinner eSuccessSpinner;
     private JLabel eSuccessValue;
@@ -117,6 +123,10 @@ public class PIDFrame extends JFrame {
         currentValPanel.add(currentDerivative, gbc);
 
         //Success Conditions
+        inSuccessRange = false;
+        succeeded = false;
+        currentSuccessTime = 0;
+
         successPanel = new JPanel();
         successPanel.setBorder(BorderFactory.createTitledBorder("Success Conditions"));
         successPanel.setLayout(new GridBagLayout());
@@ -126,34 +136,42 @@ public class PIDFrame extends JFrame {
         gbc.insets = new Insets(padding/2, padding/2, padding/2, padding/2);
         contentPane.add(successPanel, gbc);
 
-        eSuccessLabel = new JLabel("Max. Error:");
+        timeToSuccessLabel = new JLabel("Time to Success: --", SwingConstants.CENTER);
         gbc.gridx = 0;
         gbc.gridy = 0;
+        gbc.gridwidth = 2;
+        successPanel.add(timeToSuccessLabel, gbc);
+
+        eSuccessLabel = new JLabel("Max. Error:");
+        gbc.gridx = 0;
+        gbc.gridy = 1;
+        gbc.gridwidth = 1;
         gbc.weightx = 0;
         successPanel.add(eSuccessLabel, gbc);
 
         tSuccessLabel = new JLabel("Min. Time:");
-        gbc.gridy = 1;
+        gbc.gridy = 2;
         successPanel.add(tSuccessLabel, gbc);
 
         eSuccessSpinner = new JSpinner(new SpinnerNumberModel(0.1, 0, Double.POSITIVE_INFINITY, 0.01));
         gbc.gridx = 1;
-        gbc.gridy = 0;
+        gbc.gridy = 1;
         gbc.weightx = 1;
         successPanel.add(eSuccessSpinner, gbc);
 
-        tSuccessSpinner = new JSpinner(new SpinnerNumberModel(1, 0, Double.POSITIVE_INFINITY, 0.1));
-        gbc.gridy = 1;
+        tSuccessSpinner = new JSpinner(new SpinnerNumberModel(1.0, 0, Double.POSITIVE_INFINITY, 0.1));
+        gbc.gridy = 2;
         successPanel.add(tSuccessSpinner, gbc);
 
-        eSuccessValue = new JLabel();
+        eSuccessValue = new JLabel("\u2718", SwingConstants.CENTER);
+        eSuccessValue.setForeground(Color.RED);
         gbc.gridx = 2;
-        gbc.gridy = 0;
+        gbc.gridy = 1;
         gbc.weightx = 0;
         successPanel.add(eSuccessValue, gbc);
 
-        tSuccessValue = new JLabel("0.000");
-        gbc.gridy = 1;
+        tSuccessValue = new JLabel(df.format(currentSuccessTime));
+        gbc.gridy = 2;
         successPanel.add(tSuccessValue, gbc);
 
         //PID Labels
@@ -266,10 +284,33 @@ public class PIDFrame extends JFrame {
         setpointData.add(setpoint);
         errorData.add(setpoint - actual);
 
-        currentTime.setText("Time: " + new DecimalFormat("######0.00").format(time - (timeData.size()>0 ? timeData.get(0) : 0)) + " s");
-        currentError.setText("Error: " + new DecimalFormat("######0.00").format(setpoint - actual));
-        currentIntegral.setText("Integral: " + new DecimalFormat("######0.00").format(integral));
-        currentDerivative.setText("Derivative: " + new DecimalFormat("######0.00").format(derivative));
+        currentTime.setText("Time: " + df.format(time - (timeData.size()>0 ? timeData.get(0) : 0)) + " s");
+        currentError.setText("Error: " + df.format(setpoint - actual));
+        currentIntegral.setText("Integral: " + df.format(integral));
+        currentDerivative.setText("Derivative: " + df.format(derivative));
+
+        if(setpoint-actual <= (double) eSuccessSpinner.getValue()) {
+            if(inSuccessRange) {
+                currentSuccessTime += time - timeData.get(timeData.size()-2);
+                if(!succeeded && currentSuccessTime >= (double) tSuccessSpinner.getValue()) {
+                    tSuccessValue.setForeground(DARK_GREEN);
+                    timeToSuccessLabel.setText("Time to Success: " + df.format(time-timeData.get(0)) + "s");
+                    succeeded = true;
+                } else {
+                    tSuccessValue.setForeground(Color.BLACK);
+                }
+            } else {
+                inSuccessRange = true;
+                eSuccessValue.setText("\u2713");
+                eSuccessValue.setForeground(DARK_GREEN);
+            }
+        } else if(inSuccessRange) {
+            currentSuccessTime = 0;
+            inSuccessRange = false;
+            eSuccessValue.setText("\u2718");
+            eSuccessValue.setForeground(Color.RED);
+        }
+        tSuccessValue.setText(String.valueOf(df.format(currentSuccessTime)));
 
         if(actual-graph.unitSubdivision < lowerLimit) {
             lowerLimit = actual-graph.unitSubdivision;
@@ -351,7 +392,7 @@ public class PIDFrame extends JFrame {
 
             final int[] timeCoors = timeData.stream().mapToInt(x -> (int) (labelSpace + pixelsPerSecond * (x-timeData.get(0)))).toArray();
 
-            g2.setColor(new Color(0f, 0.75f, 0f));
+            g2.setColor(DARK_GREEN);
             g2.drawPolyline(
                 timeCoors,
                 setpointData.stream().mapToInt(x -> (int) (zeroPixel - pixelsPerUnit*x)).toArray(),

@@ -4,7 +4,7 @@ public class Main {
         new PIDFrame(pid);
 
         for (int i=0; true; i++) {
-            pid.update(10/(1+Math.exp(-0.2*(i-30))),10);
+            pid.update((Math.random()*0.1+9.9)/(1+Math.exp(-0.2*(i-30))),10);
 
             try {
                 Thread.sleep(50);
