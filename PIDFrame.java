@@ -60,6 +60,9 @@ public class PIDFrame extends JFrame {
     private JButton resetValuesButton;
     private JButton updateValuesButton;
 
+    private JButton viewLogButton;
+    private Log log;
+
     public PIDFrame(final PID pid) {
         super("PID Tuner");
 
@@ -74,7 +77,7 @@ public class PIDFrame extends JFrame {
         lowerLimit = -0.1;
 
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setPreferredSize(new Dimension(400, 700));
+        setPreferredSize(new Dimension(400, 750));
         setResizable(false);
         
         contentPane = new JPanel();
@@ -290,6 +293,20 @@ public class PIDFrame extends JFrame {
         });
         buttonPanel.add(updateValuesButton);
 
+        viewLogButton = new JButton("View Log");
+        gbc.gridx = 0;
+        gbc.gridy = 5;
+        gbc.gridwidth = 1;
+        contentPane.add(viewLogButton, gbc);
+        viewLogButton.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                log.setLocationRelativeTo(null);
+                log.setVisible(true);
+            }
+        });
+
+        log = new Log();
+
         pack();
         setLocationRelativeTo(null);
         setVisible(true);
@@ -462,6 +479,16 @@ public class PIDFrame extends JFrame {
             pixelsPerUnit = graphHeight / (upperLimit - lowerLimit);
             zeroPixel = (int) Math.round(upperLimit * pixelsPerUnit);
             unitSubdivision = Math.pow(10, Math.ceil(Math.log10((upperLimit - lowerLimit)/2))-1);
+        }
+    }
+
+    private class Log extends JFrame {
+        public Log() {
+            super("Log");
+
+            setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE);
+
+            setMinimumSize(new Dimension(500, 400));
         }
     }
 }
