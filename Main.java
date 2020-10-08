@@ -1,10 +1,12 @@
 public class Main {
+    public static double value;
     public static void main(String[] args) {
-        PID pid = new PID(1,2,3,4);
+        PID pid = new PID(0.25, 0, 0, 0);
+        value = 0;
         new PIDFrame(pid);
 
         for (int i=0; true; i++) {
-            pid.update((Math.random()*0.1+9.9)/(1+Math.exp(-0.2*(i-30))),10);
+            value += (pid.update(value,10) - 0.05)/5 + (Math.random()-0.5)/30;
 
             try {
                 Thread.sleep(50);

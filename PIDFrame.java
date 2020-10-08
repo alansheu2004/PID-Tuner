@@ -64,7 +64,7 @@ public class PIDFrame extends JFrame {
 
     private JButton viewLogButton;
     private Log log;
-    private File logFile;
+    private File logFile = new File("pid.log");
 
     public PIDFrame(final PID pid) {
         super("PID Tuner");
@@ -136,6 +136,7 @@ public class PIDFrame extends JFrame {
         gbc.fill = GridBagConstraints.NONE;
         resetButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
+                Main.value = 0;
                 PIDFrame.this.pid.reset();
             }
         });
@@ -176,7 +177,7 @@ public class PIDFrame extends JFrame {
         gbc.gridy = 2;
         successPanel.add(tSuccessLabel, gbc);
 
-        eSuccessSpinner = new JSpinner(new SpinnerNumberModel(0.1, 0, Double.POSITIVE_INFINITY, 0.01));
+        eSuccessSpinner = new JSpinner(new SpinnerNumberModel(0.20, 0, Double.POSITIVE_INFINITY, 0.01));
         gbc.gridx = 1;
         gbc.gridy = 1;
         gbc.weightx = 1;
@@ -326,7 +327,7 @@ public class PIDFrame extends JFrame {
         currentIntegral.setText("Integral: " + df.format(integral));
         currentDerivative.setText("Derivative: " + df.format(derivative));
 
-        if(setpoint-actual <= (double) eSuccessSpinner.getValue()) {
+        if(Math.abs(setpoint-actual) <= (double) eSuccessSpinner.getValue()) {
             if(inSuccessRange) {
                 currentSuccessTime += time - timeData.get(timeData.size()-2);
                 if(!succeeded && currentSuccessTime >= (double) tSuccessSpinner.getValue()) {
@@ -399,7 +400,6 @@ public class PIDFrame extends JFrame {
 
     private void addToLog(double p, double i, double d, double f, double tts) {
         try {
-            logFile = new File("pid.log");
             FileOutputStream fos;
             ObjectOutputStream oos;
 
@@ -416,7 +416,7 @@ public class PIDFrame extends JFrame {
                 };
             }
             
-            oos.writeObject(new Object[] {p, i, d, f, df.format(tts)});
+            oos.writeObject(new Object[] {df.format(p), df.format(i), df.format(d), df.format(f), df.format(tts)});
             log.clearLog.setEnabled(true);
             oos.close();
         } catch (Exception e) {
