@@ -1,10 +1,12 @@
 import java.util.*;
 import java.math.*;
-import java.text.DecimalFormat;
+import java.io.*;
+import java.text.*;
 
 import javax.swing.*;
 import javax.swing.event.*;
 import javax.swing.text.*;
+import javax.swing.table.*;
 import java.awt.*;
 import java.awt.event.*;
 
@@ -62,6 +64,7 @@ public class PIDFrame extends JFrame {
 
     private JButton viewLogButton;
     private Log log;
+    private File logFile;
 
     public PIDFrame(final PID pid) {
         super("PID Tuner");
@@ -330,7 +333,9 @@ public class PIDFrame extends JFrame {
                     tSuccessValue.setForeground(DARK_GREEN);
                     timeToSuccessLabel.setText("Time to Success: " + df.format(time-timeData.get(0)) + "s");
                     succeeded = true;
-                } else {
+
+                    addToLog(pid.getP(), pid.getI(), pid.getD(), pid.getF(), time-timeData.get(0));
+                } else if (!succeeded) {
                     tSuccessValue.setForeground(Color.BLACK);
                 }
             } else {
@@ -390,6 +395,35 @@ public class PIDFrame extends JFrame {
         tSuccessValue.setText(df.format(currentSuccessTime));
 
         graph.repaint();
+    }
+
+    private void addToLog(double p, double i, double d, double f, double tts) {
+        try {
+            logFile = new File("pid.log");
+            FileOutputStream fos;
+            ObjectOutputStream oos;
+
+            if(logFile.createNewFile()) {
+                fos = new FileOutputStream(logFile, true);
+                oos = new ObjectOutputStream(fos);
+            } else {
+                fos = new FileOutputStream(logFile, true);
+                oos = new ObjectOutputStream(fos) {
+                    @Override
+                    protected void writeStreamHeader() throws IOException {
+                        reset();
+                    }
+                };
+            }
+            
+            oos.writeObject(new Object[] {p, i, d, f, df.format(tts)});
+            log.clearLog.setEnabled(true);
+            oos.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        log.model.addRow(new Object[] {p, i, d, f, df.format(tts)});
     }
 
     private class Graph extends JPanel {
@@ -483,12 +517,54 @@ public class PIDFrame extends JFrame {
     }
 
     private class Log extends JFrame {
+        public final String[] columns = {"P", "I", "D", "F", "TTS"};
+        public JTable table;
+        public DefaultTableModel model;
+        public JButton clearLog;
+
         public Log() {
             super("Log");
 
             setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE);
 
-            setMinimumSize(new Dimension(500, 400));
+            setLayout(new BorderLayout());
+            
+            model = new DefaultTableModel(new Object[][]{}, columns);
+            table = new JTable(model);
+            table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+            table.setDefaultEditor(Object.class, null);
+            JScrollPane scrollPane = new JScrollPane(table);
+            add(scrollPane, BorderLayout.CENTER);
+
+            clearLog = new JButton("Clear Log");
+            clearLog.setEnabled(false);
+            clearLog.addActionListener(new ActionListener() {
+                public void actionPerformed(ActionEvent e) {
+                    if(JOptionPane.showConfirmDialog(Log.this, "Are you sure you want to clear the log?") == JOptionPane.YES_OPTION) {
+                        logFile.delete();
+                        clearLog.setEnabled(false);
+                        model.setRowCount(0);
+                    };
+                }
+            });
+            add(clearLog, BorderLayout.PAGE_END);
+            
+            try (
+                FileInputStream fis = new FileInputStream("pid.log");
+                ObjectInputStream ois = new ObjectInputStream(fis);
+            ) {
+                while(true) {
+                    Object[] obj = (Object[]) ois.readObject();
+                    clearLog.setEnabled(true);
+                    model.addRow(obj);
+                }
+            } catch(FileNotFoundException | EOFException e) {
+                //Do nothing
+            } catch(Exception e) {
+                e.printStackTrace();
+            }
+            
+            setMinimumSize(new Dimension(500, 300));
         }
     }
 }
