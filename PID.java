@@ -24,7 +24,7 @@ public class PID {
         this.kD = kD;
         this.kF = kF;
         
-        this.integral = 0;
+        integral = 0;
     }
 
     public double update(double actual, double setpoint) {
@@ -47,6 +47,15 @@ public class PID {
         lastTime = currentTime;
 
 		return error*kP + integral*kI + derivative*kD + setpoint*kF;
+    }
+
+    public void reset() { //continue by calling update
+        integral = 0;
+        lastTime = 0;
+
+        if(frame != null) {
+            frame.reset();
+        }
     }
 
     public double getP() {

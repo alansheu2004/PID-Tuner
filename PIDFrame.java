@@ -31,6 +31,7 @@ public class PIDFrame extends JFrame {
     private JLabel currentError;
     private JLabel currentIntegral;
     private JLabel currentDerivative;
+    private JButton resetButton;
 
     private boolean inSuccessRange;
     private boolean succeeded;
@@ -121,6 +122,22 @@ public class PIDFrame extends JFrame {
         gbc.gridx = 1;
         gbc.gridy = 1;
         currentValPanel.add(currentDerivative, gbc);
+
+        resetButton = new JButton("Reset");
+        gbc.gridx = 0;
+        gbc.gridy = 2;
+        gbc.gridwidth = 2;
+        gbc.fill = GridBagConstraints.NONE;
+        resetButton.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                PIDFrame.this.pid.reset();
+            }
+        });
+        currentValPanel.add(resetButton, gbc);
+
+
+        gbc.gridwidth = 1;
+        gbc.fill = GridBagConstraints.BOTH;
 
         //Success Conditions
         inSuccessRange = false;
@@ -329,6 +346,31 @@ public class PIDFrame extends JFrame {
         } else if(setpoint-actual+graph.unitSubdivision > upperLimit) {
             upperLimit = setpoint-actual+graph.unitSubdivision;
         }
+
+        graph.repaint();
+    }
+
+    public void reset() {
+        timeData = new ArrayList<>();
+        actualData = new ArrayList<>();
+        setpointData = new ArrayList<>();
+        errorData = new ArrayList<>();
+        upperLimit = 1.0;
+        lowerLimit = -0.1;
+
+        inSuccessRange = false;
+        succeeded = false;
+        currentSuccessTime = 0;
+
+        currentTime.setText("0.00 s");
+        currentError.setText("0.00");
+        currentIntegral.setText("0.00");
+        currentDerivative.setText("0.00");
+
+        timeToSuccessLabel.setText("Time to Success: --");
+        eSuccessValue.setText("\u2718");
+        eSuccessValue.setForeground(Color.RED);
+        tSuccessValue.setText(df.format(currentSuccessTime));
 
         graph.repaint();
     }
