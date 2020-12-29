@@ -136,7 +136,6 @@ public class PIDFrame extends JFrame {
         gbc.fill = GridBagConstraints.NONE;
         resetButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
-                Main.value = 0;
                 PIDFrame.this.pid.reset();
             }
         });
@@ -423,7 +422,7 @@ public class PIDFrame extends JFrame {
             e.printStackTrace();
         }
 
-        log.model.addRow(new Object[] {p, i, d, f, df.format(tts)});
+        log.model.addRow(new Object[] {df.format(p), df.format(i), df.format(d), df.format(f), df.format(tts)});
     }
 
     private class Graph extends JPanel {
